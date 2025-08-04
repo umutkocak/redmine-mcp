@@ -1,0 +1,39 @@
+name: redmine-mcp
+image: mcp/redmine-mcp
+type: server
+meta:
+  category: project-management
+  tags:
+    - redmine
+    - project-management
+    - issue-tracking
+    - time-tracking
+    - collaboration
+about:
+  title: Redmine MCP Server
+  description: A comprehensive Model Context Protocol server for Redmine project management integration. Provides full CRUD operations for projects, issues, users, time entries, and system enumerations.
+  icon: https://www.redmine.org/attachments/3458/redmine_fluid_icon.png
+source:
+  project: https://github.com/your-username/redmine-mcp
+config:
+  description: Configure your Redmine server connection
+  secrets:
+    - name: redmine.api_key
+      env: REDMINE_API_KEY
+      example: <YOUR_REDMINE_API_KEY>
+  env:
+    - name: REDMINE_URL
+      example: https://your-redmine-instance.com
+      value: '{{redmine.url}}'
+    - name: LOG_LEVEL
+      example: INFO
+      value: INFO
+  parameters:
+    type: object
+    properties:
+      url:
+        type: string
+        title: Redmine URL
+        description: Your Redmine server URL (e.g. https://demo.redmine.org)
+    required:
+      - url

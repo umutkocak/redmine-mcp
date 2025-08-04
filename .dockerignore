@@ -1,0 +1,51 @@
+# Docker ignore file for Redmine MCP
+.git
+.gitignore
+.env
+.env.example
+.env.docker
+*.md
+README.md
+CLAUDE.md
+CLAUDE_DESKTOP_SETUP.md
+
+# Development files
+.vscode/
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+
+# Testing
+test_*.py
+quick_test.py
+final_test.py
+debug_imports.py
+version_check.py
+
+# Backup files
+*.backup
+*.bak
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Claude Desktop config (contains sensitive paths)
+claude_desktop_config*.json

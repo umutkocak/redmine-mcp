@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  redmine-mcp:
+    build: .
+    container_name: redmine-mcp-server
+    environment:
+      - REDMINE_URL=${REDMINE_URL:-https://demo.redmine.org}
+      - REDMINE_API_KEY=${REDMINE_API_KEY:-dummy_key_for_testing}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
+    volumes:
+      # Optional: Mount source code for development
+      - ./src:/app/src:ro
+    networks:
+      - redmine-network
+
+networks:
+  redmine-network:
+    driver: bridge
