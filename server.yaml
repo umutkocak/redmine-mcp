@@ -14,7 +14,7 @@ about:
   description: A comprehensive Model Context Protocol server for Redmine project management integration. Provides full CRUD operations for projects, issues, users, time entries, and system enumerations.
   icon: https://www.redmine.org/attachments/3458/redmine_fluid_icon.png
 source:
-  project: https://github.com/your-username/redmine-mcp
+  project: https://github.com/umutkocak/redmine-mcp
 config:
   description: Configure your Redmine server connection
   secrets:

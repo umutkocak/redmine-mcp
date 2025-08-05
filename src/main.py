@@ -29,7 +29,7 @@ from redmine_client import RedmineClient
 from tools.projects import create_list_projects_tool, create_get_project_tool, handle_list_projects, handle_get_project
 from tools.issues import create_list_issues_tool, create_get_issue_tool, create_create_issue_tool, create_update_issue_tool, handle_list_issues, handle_get_issue, handle_create_issue, handle_update_issue
 from tools.users import create_list_users_tool, create_get_user_tool, handle_list_users, handle_get_user
-from tools.time_entries import create_list_time_entries_tool, handle_list_time_entries
+from tools.time_entries import create_list_time_entries_tool, create_create_time_entry_tool, handle_list_time_entries, handle_create_time_entry
 from tools.enumerations import create_list_enumerations_tool, handle_list_enumerations
 
 # Environment değişkenlerini yükle
@@ -90,6 +90,7 @@ async def handle_list_tools() -> List:
         create_list_users_tool(),
         create_get_user_tool(),
         create_list_time_entries_tool(),
+        create_create_time_entry_tool(),
         create_list_enumerations_tool(),
     ]
 
@@ -119,6 +120,8 @@ async def handle_call_tool(name: str, arguments: Dict[str, Any]) -> List[TextCon
             return await handle_get_user(client, arguments)
         elif name == "list_time_entries":
             return await handle_list_time_entries(client, arguments)
+        elif name == "create_time_entry":
+            return await handle_create_time_entry(client, arguments)
         elif name == "list_enumerations":
             return await handle_list_enumerations(client, arguments)
         else:

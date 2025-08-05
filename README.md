@@ -1,12 +1,13 @@
 Collecting workspace information# Redmine MCP Server
 
-> **Version**: 1.0.2 | **Status: Production Ready** 🚀
+> **Version**: 1.0.3 | **Status: Production Ready** 🚀
 
 A comprehensive Model Context Protocol (MCP) server that provides seamless integration with Redmine project management systems. Built using the standard MCP library for reliable and type-safe API interactions.
 
 ## 🌟 Features
 
 - **Complete Redmine API Coverage** - Full CRUD operations for projects, issues, users, time entries, and system enumerations
+- **Enhanced Time Tracking** - Create and manage time entries with activity tracking and custom fields
 - **MCP Standard Compliant** - Built with official MCP library for guaranteed compatibility
 - **Docker Ready** - Optimized for containerization with security and performance best practices
 - **Type-Safe Architecture** - Comprehensive type hints and Pydantic validation
@@ -56,6 +57,7 @@ python src/main.py
 
 ### Time Entries
 - `list_time_entries` - List time entries with user, project, and date filters
+- `create_time_entry` - Create new time entries with activity tracking and custom fields
 
 ### System Enumerations
 - `list_enumerations` - Get system constants (statuses, priorities, trackers, activities)
@@ -228,6 +230,20 @@ Add to your Claude Desktop with Docker configuration:
 }
 ```
 
+### Create Time Entry
+```json
+{
+  "spent_on": "2025-08-04",
+  "hours": 2.5,
+  "activity_id": 8,
+  "issue_id": 123,
+  "comments": "Working on bug fixes and feature improvements",
+  "custom_fields": [
+    {"id": 76, "value": "Development"}
+  ]
+}
+```
+
 ### List Time Entries
 ```json
 {
@@ -267,4 +283,4 @@ MIT License - see LICENSE file for details.
 
 ---
 
-**Current Version:** 1.0.2 | **Last Updated:** August 2025
+**Current Version:** 1.0.3 | **Last Updated:** August 2025

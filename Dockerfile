@@ -4,7 +4,7 @@ FROM python:3.11-slim
 # Metadata labels for Docker MCP Registry
 LABEL org.opencontainers.image.title="Redmine MCP Server"
 LABEL org.opencontainers.image.description="A comprehensive MCP server for Redmine project management integration"
-LABEL org.opencontainers.image.version="1.0.2"
+LABEL org.opencontainers.image.version="1.0.3"
 LABEL org.opencontainers.image.authors="Redmine MCP Contributors"
 LABEL org.opencontainers.image.url="https://github.com/umutkocak/redmine-mcp"
 LABEL org.opencontainers.image.documentation="https://github.com/umutkocak/redmine-mcp/blob/main/README.md"

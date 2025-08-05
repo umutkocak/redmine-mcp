@@ -265,6 +265,10 @@ class RedmineClient:
             
         return self._request("GET", "time_entries", params=params)
     
+    def create_time_entry(self, time_entry_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Creates a new time entry."""
+        return self._request("POST", "time_entries", data={"time_entry": time_entry_data})
+    
     # Enumerations API
     def get_enumerations(self, resource: Optional[str] = None) -> Dict[str, Any]:
         """Sistem sabitlerini (enumerations) listeler."""
