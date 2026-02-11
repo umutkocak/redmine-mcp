@@ -1,8 +1,49 @@
 Collecting workspace information# Redmine MCP Server
 
-> **Version**: 1.0.3 | **Status: Production Ready** 🚀
+> **Version**: 1.0.4 | **Status: Production Ready** 🚀
 
 A comprehensive Model Context Protocol (MCP) server that provides seamless integration with Redmine project management systems. Built using the standard MCP library for reliable and type-safe API interactions.
+
+## 🆕 What's New in v1.0.4
+
+**Major Feature Expansion** - Enhanced API coverage:
+
+### ✨ New Features
+
+#### Projects - Full CRUD Support
+
+- ✅ `create_project` - Create new projects with full configuration
+- ✅ `update_project` - Update existing project properties
+- ✅ `delete_project` - Permanently delete projects
+- ✅ `archive_project` - Archive projects (Redmine 5.0+)
+- ✅ `unarchive_project` - Restore archived projects (Redmine 5.0+)
+
+#### Issues - Enhanced Management
+
+- ✅ `delete_issue` - Delete issues permanently
+- ✅ `add_watcher` - Add users as issue watchers
+- ✅ `remove_watcher` - Remove watchers from issues
+
+#### Users - Complete CRUD Operations
+
+- ✅ `get_current_user` - Get authenticated user information
+- ✅ `create_user` - Create new users (Admin permission required)
+- ✅ `update_user` - Update user details (Admin permission required)
+- ✅ `delete_user` - Delete users (Admin permission required)
+
+#### Time Entries - Full CRUD Support
+
+- ✅ `get_time_entry` - Retrieve time entry details
+- ✅ `update_time_entry` - Modify existing time entries
+- ✅ `delete_time_entry` - Remove time entries
+
+#### Attachments - File Management 🔥
+
+- ✅ `upload_file` - Upload files with UTF-8 filename support
+- ✅ `get_attachment` - Retrieve attachment metadata
+- ✅ `download_attachment` - Download attachment content
+
+**Total Operations:** 29 (was 11 in v1.0.3) - **+164% increase!**
 
 ## 🌟 Features
 
@@ -17,6 +58,7 @@ A comprehensive Model Context Protocol (MCP) server that provides seamless integ
 ## 🚀 Quick Start
 
 ### Option 1: Docker (Recommended)
+
 ```bash
 git clone https://github.com/umutkocak/redmine-mcp.git
 cd redmine-mcp
@@ -27,6 +69,7 @@ docker run -it --env-file .env redmine-mcp
 ```
 
 ### Option 2: Local Installation
+
 ```bash
 git clone https://github.com/umutkocak/redmine-mcp.git
 cd redmine-mcp
@@ -41,26 +84,54 @@ python src/main.py
 
 ## 📦 Supported Operations
 
-### Projects
+### Projects (7 operations)
+
 - `list_projects` - List all projects with filtering and pagination
 - `get_project` - Get detailed information about a specific project
+- `create_project` - Create new project ✨ NEW
+- `update_project` - Update project details ✨ NEW
+- `delete_project` - Delete project ✨ NEW
+- `archive_project` - Archive project (Redmine 5.0+) ✨ NEW
+- `unarchive_project` - Unarchive project (Redmine 5.0+) ✨ NEW
 
-### Issues
+### Issues (7 operations)
+
 - `list_issues` - List and filter issues (by project, assignee, status, priority, etc.)
 - `get_issue` - Get issue details including comments, attachments, and history
 - `create_issue` - Create new issues with full metadata support
 - `update_issue` - Update issues (change status, add comments, reassign, etc.)
+- `delete_issue` - Delete issues ✨ NEW
+- `add_watcher` - Add watcher to issue ✨ NEW
+- `remove_watcher` - Remove watcher from issue ✨ NEW
 
-### Users
+### Users (6 operations)
+
 - `list_users` - List users with status filtering
 - `get_user` - Get user details and information
+- `get_current_user` - Get authenticated user info ✨ NEW
+- `create_user` - Create new users (Admin) ✨ NEW
+- `update_user` - Update user details (Admin) ✨ NEW
+- `delete_user` - Delete users (Admin) ✨ NEW
 
-### Time Entries
+### Time Entries (5 operations)
+
 - `list_time_entries` - List time entries with user, project, and date filters
 - `create_time_entry` - Create new time entries with activity tracking and custom fields
+- `get_time_entry` - Get time entry details ✨ NEW
+- `update_time_entry` - Update time entries ✨ NEW
+- `delete_time_entry` - Delete time entries ✨ NEW
 
-### System Enumerations
+### Attachments (3 operations) 🔥 NEW MODULE
+
+- `upload_file` - Upload files and get token for issue/wiki attachment
+- `get_attachment` - Get attachment metadata
+- `download_attachment` - Download attachment content
+
+### System Enumerations (1 operation)
+
 - `list_enumerations` - Get system constants (statuses, priorities, trackers, activities)
+
+**Total: 29 Operations** (was 11 in v1.0.3)
 
 ## 🔧 Configuration
 
@@ -84,12 +155,14 @@ LOG_LEVEL=INFO
 ## 🐳 Docker Deployment
 
 ### Basic Docker Run
+
 ```bash
 docker build -t redmine-mcp .
 docker run -it --env-file .env redmine-mcp
 ```
 
 ### Docker Compose (Recommended for Production)
+
 ```bash
 cp .env.example .env
 # Edit .env with your settings
@@ -164,10 +237,14 @@ Add to your Claude Desktop with Docker configuration:
         "run",
         "--rm",
         "-i",
-        "--name", "redmine-mcp",
-        "-e", "REDMINE_URL=https://your-redmine-server.example.com",
-        "-e", "REDMINE_API_KEY=your_api_key_here_example_12345",
-        "-e", "LOG_LEVEL=INFO",
+        "--name",
+        "redmine-mcp",
+        "-e",
+        "REDMINE_URL=https://your-redmine-server.example.com",
+        "-e",
+        "REDMINE_API_KEY=your_api_key_here_example_12345",
+        "-e",
+        "LOG_LEVEL=INFO",
         "redmine-mcp:latest"
       ]
     }
@@ -175,9 +252,8 @@ Add to your Claude Desktop with Docker configuration:
 }
 ```
 
-
-
 **Config file locations:**
+
 - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
 - Linux: `~/.config/claude/claude_desktop_config.json`
 - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
@@ -185,6 +261,7 @@ Add to your Claude Desktop with Docker configuration:
 ## 📝 API Examples
 
 ### List Projects
+
 ```json
 {
   "limit": 10,
@@ -193,6 +270,7 @@ Add to your Claude Desktop with Docker configuration:
 ```
 
 ### Get Project Details
+
 ```json
 {
   "project_id": 1
@@ -200,6 +278,7 @@ Add to your Claude Desktop with Docker configuration:
 ```
 
 ### Create Issue
+
 ```json
 {
   "issue": {
@@ -211,14 +290,13 @@ Add to your Claude Desktop with Docker configuration:
     "assigned_to_id": 5,
     "start_date": "2025-08-10",
     "due_date": "2025-08-15",
-    "custom_fields": [
-      {"id": 1, "value": "example_value"}
-    ]
+    "custom_fields": [{ "id": 1, "value": "example_value" }]
   }
 }
 ```
 
 ### Update Issue
+
 ```json
 {
   "issue_id": 123,
@@ -231,6 +309,7 @@ Add to your Claude Desktop with Docker configuration:
 ```
 
 ### Create Time Entry
+
 ```json
 {
   "spent_on": "2025-08-04",
@@ -238,13 +317,12 @@ Add to your Claude Desktop with Docker configuration:
   "activity_id": 8,
   "issue_id": 123,
   "comments": "Working on bug fixes and feature improvements",
-  "custom_fields": [
-    {"id": 76, "value": "Development"}
-  ]
+  "custom_fields": [{ "id": 76, "value": "Development" }]
 }
 ```
 
 ### List Time Entries
+
 ```json
 {
   "user_id": 5,
@@ -268,6 +346,7 @@ Add to your Claude Desktop with Docker configuration:
 Set `LOG_LEVEL=DEBUG` in your .env file for detailed logging.
 
 For advanced debugging:
+
 ```bash
 python src/debug_main.py
 ```

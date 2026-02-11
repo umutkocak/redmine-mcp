@@ -4,8 +4,8 @@ Redmine MCP Server - Version Management
 This module manages the project version.
 """
 
-__version__ = "1.0.3"
-__version_info__ = (1, 0, 3)
+__version__ = "1.0.4"
+__version_info__ = (1, 0, 4)
 
 # Changelog
 CHANGELOG = {

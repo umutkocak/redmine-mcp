@@ -8,6 +8,7 @@ Tüm HTTP isteklerini ve authentication'ı handle eder.
 import json
 import logging
 import os
+import urllib.parse
 from typing import Any, Dict, List, Optional, Union
 from urllib.parse import urljoin
 
@@ -170,6 +171,64 @@ class RedmineClient:
                 return None
             raise
     
+    def create_project(self, project_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Yeni proje oluşturur.
+        
+        Args:
+            project_data: Proje verisi (name, identifier zorunlu)
+            
+        Returns:
+            Oluşturulan proje bilgisi
+        """
+        return self._request("POST", "projects", data={"project": project_data})
+    
+    def update_project(self, project_id: Union[int, str], 
+                      project_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Proje günceller.
+        
+        Args:
+            project_id: Proje ID veya identifier
+            project_data: Güncellenecek proje verisi
+            
+        Returns:
+            API response
+        """
+        return self._request("PUT", f"projects/{project_id}", 
+                           data={"project": project_data})
+    
+    def delete_project(self, project_id: Union[int, str]) -> Dict[str, Any]:
+        """Projeyi siler.
+        
+        Args:
+            project_id: Proje ID veya identifier
+            
+        Returns:
+            API response
+        """
+        return self._request("DELETE", f"projects/{project_id}")
+    
+    def archive_project(self, project_id: Union[int, str]) -> Dict[str, Any]:
+        """Projeyi arşivler (Redmine 5.0+).
+        
+        Args:
+            project_id: Proje ID veya identifier
+            
+        Returns:
+            API response
+        """
+        return self._request("PUT", f"projects/{project_id}/archive")
+    
+    def unarchive_project(self, project_id: Union[int, str]) -> Dict[str, Any]:
+        """Projeyi arşivden çıkarır (Redmine 5.0+).
+        
+        Args:
+            project_id: Proje ID veya identifier
+            
+        Returns:
+            API response
+        """
+        return self._request("PUT", f"projects/{project_id}/unarchive")
+    
     # Issues API
     def get_issues(self, project_id: Optional[int] = None, 
                    assigned_to_id: Optional[Union[int, str]] = None,
@@ -219,6 +278,31 @@ class RedmineClient:
         """Issue'yu siler."""
         return self._request("DELETE", f"issues/{issue_id}")
     
+    def add_watcher(self, issue_id: int, user_id: int) -> Dict[str, Any]:
+        """Issue'ya watcher (takipçi) ekler.
+        
+        Args:
+            issue_id: Issue ID
+            user_id: Eklenecek kullanıcı ID
+            
+        Returns:
+            API response
+        """
+        return self._request("POST", f"issues/{issue_id}/watchers", 
+                           data={"user_id": user_id})
+    
+    def remove_watcher(self, issue_id: int, user_id: int) -> Dict[str, Any]:
+        """Issue'dan watcher (takipçi) çıkarır.
+        
+        Args:
+            issue_id: Issue ID
+            user_id: Çıkarılacak kullanıcı ID
+            
+        Returns:
+            API response
+        """
+        return self._request("DELETE", f"issues/{issue_id}/watchers/{user_id}")
+    
     # Users API
     def get_users(self, limit: int = 25, offset: int = 0,
                   status: Optional[int] = None) -> Dict[str, Any]:
@@ -235,6 +319,51 @@ class RedmineClient:
         if include:
             params["include"] = ",".join(include)
         return self._request("GET", f"users/{user_id}", params=params)
+    
+    def get_current_user(self, include: Optional[List[str]] = None) -> Dict[str, Any]:
+        """Mevcut kullanıcıyı getirir (/users/current).
+        
+        Args:
+            include: İçerilecek ilişkiler (memberships, groups)
+            
+        Returns:
+            Kullanıcı bilgisi
+        """
+        return self.get_user("current", include=include)
+    
+    def create_user(self, user_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Yeni kullanıcı oluşturur (Admin yetkisi gerekli).
+        
+        Args:
+            user_data: Kullanıcı verisi (login, firstname, lastname, mail zorunlu)
+            
+        Returns:
+            Oluşturulan kullanıcı bilgisi
+        """
+        return self._request("POST", "users", data={"user": user_data})
+    
+    def update_user(self, user_id: int, user_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Kullanıcı günceller (Admin yetkisi gerekli).
+        
+        Args:
+            user_id: Kullanıcı ID
+            user_data: Güncellenecek kullanıcı verisi
+            
+        Returns:
+            API response
+        """
+        return self._request("PUT", f"users/{user_id}", data={"user": user_data})
+    
+    def delete_user(self, user_id: int) -> Dict[str, Any]:
+        """Kullanıcıyı siler (Admin yetkisi gerekli).
+        
+        Args:
+            user_id: Kullanıcı ID
+            
+        Returns:
+            API response
+        """
+        return self._request("DELETE", f"users/{user_id}")
     
     # Time Entries API
     def get_time_entries(self, user_id: Optional[int] = None,
@@ -269,6 +398,43 @@ class RedmineClient:
         """Creates a new time entry."""
         return self._request("POST", "time_entries", data={"time_entry": time_entry_data})
     
+    def get_time_entry(self, time_entry_id: int) -> Dict[str, Any]:
+        """Belirli bir zaman kaydını getirir.
+        
+        Args:
+            time_entry_id: Zaman kaydı ID
+            
+        Returns:
+            Zaman kaydı bilgisi
+        """
+        response = self._request("GET", f"time_entries/{time_entry_id}")
+        return response.get("time_entry", {})
+    
+    def update_time_entry(self, time_entry_id: int, 
+                         time_entry_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Zaman kaydını günceller.
+        
+        Args:
+            time_entry_id: Zaman kaydı ID
+            time_entry_data: Güncellenecek veri
+            
+        Returns:
+            API response
+        """
+        return self._request("PUT", f"time_entries/{time_entry_id}", 
+                           data={"time_entry": time_entry_data})
+    
+    def delete_time_entry(self, time_entry_id: int) -> Dict[str, Any]:
+        """Zaman kaydını siler.
+        
+        Args:
+            time_entry_id: Zaman kaydı ID
+            
+        Returns:
+            API response
+        """
+        return self._request("DELETE", f"time_entries/{time_entry_id}")
+    
     # Enumerations API
     def get_enumerations(self, resource: Optional[str] = None) -> Dict[str, Any]:
         """Sistem sabitlerini (enumerations) listeler."""
@@ -276,6 +442,134 @@ class RedmineClient:
         if resource:
             endpoint = f"enumerations/{resource}"
         return self._request("GET", endpoint)
+    
+    # Attachments API
+    def upload_file(self, file_data: bytes, filename: str) -> str:
+        """Dosya yükler ve upload token döner.
+        
+        NOT: Redmine'da dosya yükleme iki aşamalıdır:
+        1. Bu metod: POST /uploads.json -> token al
+        2. Issue/Wiki create/update'de token kullan
+        
+        Args:
+            file_data: Binary dosya verisi
+            filename: Dosya adı (UTF-8 desteklenir)
+            
+        Returns:
+            Upload token (string)
+            
+        Example:
+            token = client.upload_file(file_content, "döküman.pdf")
+            client.create_issue({
+                "project_id": 1,
+                "subject": "Issue with attachment",
+                "uploads": [{"token": token, "filename": "döküman.pdf"}]
+            })
+        """
+        # UTF-8 filename encode for URL
+        filename_encoded = urllib.parse.quote(filename.encode('utf-8'))
+        
+        url = f"{self.url}/uploads.json?filename={filename_encoded}"
+        
+        try:
+            # Özel headers: Content-Type değişiyor!
+            headers = {
+                'Content-Type': 'application/octet-stream',
+                'Accept': 'application/json'
+            }
+            
+            # API key authentication
+            if self.api_key:
+                headers['X-Redmine-API-Key'] = self.api_key
+            
+            logger.debug(f"Uploading file: {filename} ({len(file_data)} bytes)")
+            
+            response = self.session.post(
+                url,
+                data=file_data,  # NOT json=, direkt data=
+                headers=headers,
+                timeout=60  # Longer timeout for file upload
+            )
+            
+            logger.debug(f"Upload response status: {response.status_code}")
+            
+            if response.status_code == 201:
+                result = response.json()
+                token = result.get('upload', {}).get('token')
+                if not token:
+                    raise RedmineAPIError("Upload successful but no token in response")
+                return token
+            
+            # Error handling
+            try:
+                error_data = response.json()
+                error_message = error_data.get("errors", [f"HTTP {response.status_code}"])
+                if isinstance(error_message, list):
+                    error_message = ", ".join(error_message)
+            except json.JSONDecodeError:
+                error_message = f"HTTP {response.status_code}: {response.text}"
+            
+            raise RedmineAPIError(
+                message=error_message,
+                status_code=response.status_code,
+                response_data=error_data if 'error_data' in locals() else None
+            )
+            
+        except requests.exceptions.RequestException as e:
+            logger.error(f"File upload failed: {e}")
+            raise RedmineAPIError(f"File upload failed: {str(e)}")
+    
+    def get_attachment(self, attachment_id: int) -> Dict[str, Any]:
+        """Ek dosyanın bilgilerini (metadata) getirir.
+        
+        Args:
+            attachment_id: Ek ID
+            
+        Returns:
+            Ek bilgileri (filename, filesize, content_type, vb.)
+        """
+        response = self._request("GET", f"attachments/{attachment_id}")
+        return response.get("attachment", {})
+    
+    def download_attachment(self, attachment_id: int) -> bytes:
+        """Ek dosyasını indirir.
+        
+        Args:
+            attachment_id: Ek ID
+            
+        Returns:
+            Binary dosya verisi
+        """
+        # Get attachment info first
+        attachment_info = self.get_attachment(attachment_id)
+        content_url = attachment_info.get('content_url')
+        
+        if not content_url:
+            raise RedmineAPIError("Attachment has no content_url")
+        
+        try:
+            # Download the file
+            headers = {}
+            if self.api_key:
+                headers['X-Redmine-API-Key'] = self.api_key
+            
+            response = self.session.get(
+                content_url,
+                headers=headers,
+                timeout=60
+            )
+            
+            if response.status_code == 200:
+                return response.content
+            
+            raise RedmineAPIError(
+                f"Failed to download attachment: HTTP {response.status_code}",
+                status_code=response.status_code
+            )
+            
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Attachment download failed: {e}")
+            raise RedmineAPIError(f"Attachment download failed: {str(e)}")
     
     # Utility methods
     def test_connection(self) -> bool:
