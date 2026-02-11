@@ -437,33 +437,60 @@ class RedmineClient:
     
     # Enumerations API
     def get_enumerations(self, resource: Optional[str] = None) -> Dict[str, Any]:
-        """Sistem sabitlerini (enumerations) listeler."""
+        """Lists system enumerations."""
         endpoint = "enumerations"
         if resource:
             endpoint = f"enumerations/{resource}"
         return self._request("GET", endpoint)
     
+    def list_trackers(self) -> List[Dict[str, Any]]:
+        """Lists all available trackers.
+        
+        Returns:
+            List of trackers (id, name, default_status, description)
+        """
+        response = self._request("GET", "trackers")
+        return response.get("trackers", [])
+    
+    def list_issue_statuses(self) -> List[Dict[str, Any]]:
+        """Lists all available issue statuses.
+        
+        Returns:
+            List of issue statuses (id, name, is_closed)
+        """
+        response = self._request("GET", "issue_statuses")
+        return response.get("issue_statuses", [])
+    
+    def list_roles(self) -> List[Dict[str, Any]]:
+        """Lists all available roles.
+        
+        Returns:
+            List of roles (id, name)
+        """
+        response = self._request("GET", "roles")
+        return response.get("roles", [])
+    
     # Attachments API
     def upload_file(self, file_data: bytes, filename: str) -> str:
-        """Dosya yükler ve upload token döner.
+        """Uploads a file and returns an upload token.
         
-        NOT: Redmine'da dosya yükleme iki aşamalıdır:
-        1. Bu metod: POST /uploads.json -> token al
-        2. Issue/Wiki create/update'de token kullan
+        NOTE: File upload in Redmine is two-stage:
+        1. This method: POST /uploads.json -> gets token
+        2. Use token in Issue/Wiki create/update
         
         Args:
-            file_data: Binary dosya verisi
-            filename: Dosya adı (UTF-8 desteklenir)
+            file_data: Binary file data
+            filename: Filename (supports UTF-8)
             
         Returns:
             Upload token (string)
             
         Example:
-            token = client.upload_file(file_content, "döküman.pdf")
+            token = client.upload_file(file_content, "document.pdf")
             client.create_issue({
                 "project_id": 1,
                 "subject": "Issue with attachment",
-                "uploads": [{"token": token, "filename": "döküman.pdf"}]
+                "uploads": [{"token": token, "filename": "document.pdf"}]
             })
         """
         # UTF-8 filename encode for URL
@@ -472,7 +499,7 @@ class RedmineClient:
         url = f"{self.url}/uploads.json?filename={filename_encoded}"
         
         try:
-            # Özel headers: Content-Type değişiyor!
+            # Special headers: Content-Type changes!
             headers = {
                 'Content-Type': 'application/octet-stream',
                 'Accept': 'application/json'
@@ -486,7 +513,7 @@ class RedmineClient:
             
             response = self.session.post(
                 url,
-                data=file_data,  # NOT json=, direkt data=
+                data=file_data,  # NOT json=, direct data=
                 headers=headers,
                 timeout=60  # Longer timeout for file upload
             )
@@ -520,25 +547,25 @@ class RedmineClient:
             raise RedmineAPIError(f"File upload failed: {str(e)}")
     
     def get_attachment(self, attachment_id: int) -> Dict[str, Any]:
-        """Ek dosyanın bilgilerini (metadata) getirir.
+        """Gets attachment metadata.
         
         Args:
-            attachment_id: Ek ID
+            attachment_id: Attachment ID
             
         Returns:
-            Ek bilgileri (filename, filesize, content_type, vb.)
+            Attachment info (filename, filesize, content_type, etc.)
         """
         response = self._request("GET", f"attachments/{attachment_id}")
         return response.get("attachment", {})
     
     def download_attachment(self, attachment_id: int) -> bytes:
-        """Ek dosyasını indirir.
+        """Downloads an attachment file.
         
         Args:
-            attachment_id: Ek ID
+            attachment_id: Attachment ID
             
         Returns:
-            Binary dosya verisi
+            Binary file data
         """
         # Get attachment info first
         attachment_info = self.get_attachment(attachment_id)
@@ -570,10 +597,644 @@ class RedmineClient:
         except requests.exceptions.RequestException as e:
             logger.error(f"Attachment download failed: {e}")
             raise RedmineAPIError(f"Attachment download failed: {str(e)}")
+
+    # Issue Relations API
+    def list_issue_relations(self, issue_id: int) -> List[Dict[str, Any]]:
+        """Lists all relations for a specific issue.
+        
+        Args:
+            issue_id: Issue ID to list relations for
+            
+        Returns:
+            List of relations
+        """
+        # Relations are included in issue details with 'relations' include
+        response = self._request("GET", f"issues/{issue_id}", 
+                                params={"include": "relations"})
+        relations = response.get("issue", {}).get("relations", [])
+        return relations
     
+    def create_issue_relation(self, issue_id: int, issue_to_id: int, 
+                             relation_type: str, delay: Optional[int] = None) -> Dict[str, Any]:
+        """Creates a relation between two issues.
+        
+        Args:
+            issue_id: Source issue ID
+            issue_to_id: Target issue ID
+            relation_type: Type of relation (relates, duplicates, blocks, etc.)
+            delay: Delay in days (only for precedes/follows relations)
+            
+        Returns:
+            Created relation details
+        """
+        relation_data = {
+            "issue_to_id": issue_to_id,
+            "relation_type": relation_type
+        }
+        
+        if delay is not None:
+            relation_data["delay"] = delay
+            
+        return self._request("POST", f"issues/{issue_id}/relations", 
+                           data={"relation": relation_data})
+    
+    def get_issue_relation(self, relation_id: int) -> Dict[str, Any]:
+        """Gets details of a specific relation.
+        
+        Args:
+            relation_id: Relation ID
+            
+        Returns:
+            Relation details
+        """
+        response = self._request("GET", f"relations/{relation_id}")
+        return response.get("relation", {})
+    
+    def delete_issue_relation(self, relation_id: int) -> bool:
+        """Deletes a specific issue relation.
+        
+        Args:
+            relation_id: Relation ID to delete
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            self._request("DELETE", f"relations/{relation_id}")
+            return True
+        except RedmineAPIError:
+            return False
+
+    # Versions API
+    def list_versions(self, project_id: Union[str, int]) -> List[Dict[str, Any]]:
+        """Lists all versions for a specific project.
+        
+        Args:
+            project_id: Project ID or identifier
+            
+        Returns:
+            List of versions
+        """
+        response = self._request("GET", f"projects/{project_id}/versions")
+        return response.get("versions", [])
+    
+    def get_version(self, version_id: int) -> Dict[str, Any]:
+        """Gets details of a specific version.
+        
+        Args:
+            version_id: Version ID
+            
+        Returns:
+            Version details
+        """
+        response = self._request("GET", f"versions/{version_id}")
+        return response.get("version", {})
+    
+    def create_version(self, project_id: Union[str, int], 
+                      version_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Creates a new version in a project.
+        
+        Args:
+            project_id: Project ID or identifier
+            version_data: Version properties (name, description, status, etc.)
+            
+        Returns:
+            Created version details
+        """
+        version_data["project_id"] = project_id
+        return self._request("POST", "versions", data={"version": version_data})
+    
+    def update_version(self, version_id: int, 
+                      version_data: Dict[str, Any]) -> bool:
+        """Updates an existing version.
+        
+        Args:
+            version_id: Version ID to update
+            version_data: Properties to update
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            self._request("PUT", f"versions/{version_id}", 
+                         data={"version": version_data})
+            return True
+        except RedmineAPIError:
+            return False
+    
+    def delete_version(self, version_id: int) -> bool:
+        """Deletes a specific version.
+        
+        Args:
+            version_id: Version ID to delete
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            self._request("DELETE", f"versions/{version_id}")
+            return True
+        except RedmineAPIError:
+            return False
+
+    # Memberships API
+    def list_memberships(self, project_id: Union[str, int]) -> List[Dict[str, Any]]:
+        """Lists all memberships for a specific project.
+        
+        Args:
+            project_id: Project ID or identifier
+            
+        Returns:
+            List of memberships
+        """
+        response = self._request("GET", f"projects/{project_id}/memberships")
+        return response.get("memberships", [])
+    
+    def get_membership(self, membership_id: int) -> Dict[str, Any]:
+        """Gets details of a specific membership.
+        
+        Args:
+            membership_id: Membership ID
+            
+        Returns:
+            Membership details
+        """
+        response = self._request("GET", f"memberships/{membership_id}")
+        return response.get("membership", {})
+    
+    def create_membership(self, project_id: Union[str, int], 
+                        membership_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Creates a new membership in a project.
+        
+        Args:
+            project_id: Project ID or identifier
+            membership_data: Membership properties (user_id/group_id and role_ids)
+            
+        Returns:
+            Created membership details
+        """
+        membership_data["project_id"] = project_id
+        return self._request("POST", "memberships", data={"membership": membership_data})
+    
+    def update_membership(self, membership_id: int, 
+                        role_ids: List[int]) -> bool:
+        """Updates roles for an existing membership.
+        
+        Args:
+            membership_id: Membership ID to update
+            role_ids: New list of role IDs
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            self._request("PUT", f"memberships/{membership_id}", 
+                         data={"membership": {"role_ids": role_ids}})
+            return True
+        except RedmineAPIError:
+            return False
+    
+    def delete_membership(self, membership_id: int) -> bool:
+        """Deletes a specific membership.
+        
+        Args:
+            membership_id: Membership ID to delete
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            self._request("DELETE", f"memberships/{membership_id}")
+            return True
+        except RedmineAPIError:
+            return False
+
+    # Issue Categories API
+    def list_issue_categories(self, project_id: Union[str, int]) -> List[Dict[str, Any]]:
+        """Lists all issue categories for a specific project.
+        
+        Args:
+            project_id: Project ID or identifier
+            
+        Returns:
+            List of issue categories
+        """
+        response = self._request("GET", f"projects/{project_id}/issue_categories")
+        return response.get("issue_categories", [])
+    
+    def get_issue_category(self, category_id: int) -> Dict[str, Any]:
+        """Gets details of a specific issue category.
+        
+        Args:
+            category_id: Category ID
+            
+        Returns:
+            Category details
+        """
+        response = self._request("GET", f"issue_categories/{category_id}")
+        return response.get("issue_category", {})
+    
+    def create_issue_category(self, project_id: Union[str, int],
+                             category_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Creates a new issue category in a project.
+        
+        Args:
+            project_id: Project ID or identifier
+            category_data: Category properties (name required, assigned_to_id optional)
+            
+        Returns:
+            Created category details
+        """
+        response = self._request("POST", f"projects/{project_id}/issue_categories",
+                                data={"issue_category": category_data})
+        return response.get("issue_category", response)
+    
+    def update_issue_category(self, category_id: int,
+                             category_data: Dict[str, Any]) -> bool:
+        """Updates an existing issue category.
+        
+        Args:
+            category_id: Category ID to update
+            category_data: Properties to update (name, assigned_to_id)
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            self._request("PUT", f"issue_categories/{category_id}",
+                         data={"issue_category": category_data})
+            return True
+        except RedmineAPIError:
+            return False
+    
+    def delete_issue_category(self, category_id: int,
+                             reassign_to_id: Optional[int] = None) -> bool:
+        """Deletes a specific issue category.
+        
+        Args:
+            category_id: Category ID to delete
+            reassign_to_id: Category ID to reassign existing issues to (optional)
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            params = {}
+            if reassign_to_id is not None:
+                params["reassign_to_id"] = reassign_to_id
+            self._request("DELETE", f"issue_categories/{category_id}", params=params)
+            return True
+        except RedmineAPIError:
+            return False
+
+    # Wiki Pages API
+    def list_wiki_pages(self, project_id: Union[str, int]) -> List[Dict[str, Any]]:
+        """Lists all wiki pages for a specific project.
+        
+        Args:
+            project_id: Project ID or identifier
+            
+        Returns:
+            List of wiki pages
+        """
+        response = self._request("GET", f"projects/{project_id}/wiki/index")
+        return response.get("wiki_pages", [])
+    
+    def get_wiki_page(self, project_id: Union[str, int], page_name: str,
+                      version: Optional[int] = None) -> Dict[str, Any]:
+        """Gets a specific wiki page content.
+        
+        Args:
+            project_id: Project ID or identifier
+            page_name: Wiki page name (URL title)
+            version: Specific version number (optional)
+            
+        Returns:
+            Wiki page details including content
+        """
+        endpoint = f"projects/{project_id}/wiki/{page_name}"
+        if version is not None:
+            endpoint = f"{endpoint}/{version}"
+        response = self._request("GET", endpoint)
+        return response.get("wiki_page", {})
+    
+    def create_or_update_wiki_page(self, project_id: Union[str, int],
+                                    page_name: str,
+                                    wiki_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Creates or updates a wiki page.
+        
+        Args:
+            project_id: Project ID or identifier
+            page_name: Wiki page name
+            wiki_data: Page data (text, comments, parent_title)
+            
+        Returns:
+            Wiki page details
+        """
+        response = self._request("PUT", f"projects/{project_id}/wiki/{page_name}",
+                                data={"wiki_page": wiki_data})
+        return response.get("wiki_page", response)
+    
+    def delete_wiki_page(self, project_id: Union[str, int], page_name: str) -> bool:
+        """Deletes a wiki page.
+        
+        Args:
+            project_id: Project ID or identifier
+            page_name: Wiki page name to delete
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            self._request("DELETE", f"projects/{project_id}/wiki/{page_name}")
+            return True
+        except RedmineAPIError:
+            return False
+
+    # Groups API
+    def list_groups(self) -> List[Dict[str, Any]]:
+        """Lists all groups. Requires admin privileges.
+        
+        Returns:
+            List of groups
+        """
+        response = self._request("GET", "groups")
+        return response.get("groups", [])
+    
+    def get_group(self, group_id: int, include_users: bool = False) -> Dict[str, Any]:
+        """Gets details of a specific group.
+        
+        Args:
+            group_id: Group ID
+            include_users: Whether to include group members
+            
+        Returns:
+            Group details
+        """
+        params = {}
+        if include_users:
+            params["include"] = "users,memberships"
+        response = self._request("GET", f"groups/{group_id}", params=params)
+        return response.get("group", {})
+    
+    def create_group(self, group_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Creates a new group. Requires admin privileges.
+        
+        Args:
+            group_data: Group data (name required, user_ids optional)
+            
+        Returns:
+            Created group details
+        """
+        response = self._request("POST", "groups", data={"group": group_data})
+        return response.get("group", response)
+    
+    def update_group(self, group_id: int, group_data: Dict[str, Any]) -> bool:
+        """Updates an existing group. Requires admin privileges.
+        
+        Args:
+            group_id: Group ID to update
+            group_data: Properties to update
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            self._request("PUT", f"groups/{group_id}", data={"group": group_data})
+            return True
+        except RedmineAPIError:
+            return False
+    
+    def delete_group(self, group_id: int) -> bool:
+        """Deletes a group. Requires admin privileges.
+        
+        Args:
+            group_id: Group ID to delete
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            self._request("DELETE", f"groups/{group_id}")
+            return True
+        except RedmineAPIError:
+            return False
+    
+    def add_user_to_group(self, group_id: int, user_id: int) -> bool:
+        """Adds a user to a group. Requires admin privileges.
+        
+        Args:
+            group_id: Group ID
+            user_id: User ID to add
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            self._request("POST", f"groups/{group_id}/users",
+                         data={"user_id": user_id})
+            return True
+        except RedmineAPIError:
+            return False
+    
+    def remove_user_from_group(self, group_id: int, user_id: int) -> bool:
+        """Removes a user from a group. Requires admin privileges.
+        
+        Args:
+            group_id: Group ID
+            user_id: User ID to remove
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            self._request("DELETE", f"groups/{group_id}/users/{user_id}")
+            return True
+        except RedmineAPIError:
+            return False
+
+    # Roles API (extended)
+    def get_role(self, role_id: int) -> Dict[str, Any]:
+        """Gets details of a specific role, including permissions.
+        
+        Args:
+            role_id: Role ID
+            
+        Returns:
+            Role details with permissions
+        """
+        response = self._request("GET", f"roles/{role_id}")
+        return response.get("role", {})
+
+    # Custom Fields API
+    def list_custom_fields(self) -> List[Dict[str, Any]]:
+        """Lists all custom fields. Requires admin privileges.
+        
+        Returns:
+            List of custom field definitions
+        """
+        response = self._request("GET", "custom_fields")
+        return response.get("custom_fields", [])
+
+    # Journals API
+    def list_issue_journals(self, issue_id: int) -> List[Dict[str, Any]]:
+        """Lists the change history (journals) of an issue.
+        
+        Args:
+            issue_id: Issue ID
+            
+        Returns:
+            List of journal entries
+        """
+        response = self._request("GET", f"issues/{issue_id}",
+                                params={"include": "journals"})
+        return response.get("issue", {}).get("journals", [])
+    
+    def update_journal(self, journal_id: int, journal_data: Dict[str, Any]) -> bool:
+        """Updates journal notes.
+        
+        Args:
+            journal_id: Journal ID to update
+            journal_data: Data to update (notes, private_notes)
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            self._request("PUT", f"journals/{journal_id}",
+                         data={"journal": journal_data})
+            return True
+        except RedmineAPIError:
+            return False
+
+    # News API
+    def list_news(self, project_id: Optional[Union[str, int]] = None,
+                  limit: int = 25, offset: int = 0) -> List[Dict[str, Any]]:
+        """Lists news entries.
+        
+        Args:
+            project_id: Project ID or identifier (optional, omit for all news)
+            limit: Maximum number of entries
+            offset: Pagination offset
+            
+        Returns:
+            List of news entries
+        """
+        params = {"limit": limit, "offset": offset}
+        if project_id:
+            endpoint = f"projects/{project_id}/news"
+        else:
+            endpoint = "news"
+        response = self._request("GET", endpoint, params=params)
+        return response.get("news", [])
+    
+    def get_news(self, news_id: int) -> Dict[str, Any]:
+        """Gets details of a specific news entry.
+        
+        Args:
+            news_id: News ID
+            
+        Returns:
+            News details
+        """
+        response = self._request("GET", f"news/{news_id}")
+        return response.get("news", {})
+
+    # Queries API
+    def list_queries(self, project_id: Optional[Union[str, int]] = None) -> List[Dict[str, Any]]:
+        """Lists saved/custom queries.
+        
+        Args:
+            project_id: Project ID or identifier (optional)
+            
+        Returns:
+            List of saved queries
+        """
+        params = {}
+        if project_id:
+            params["project_id"] = project_id
+        response = self._request("GET", "queries", params=params)
+        return response.get("queries", [])
+
+    # Search API
+    def search(self, query: str, project_id: Optional[Union[str, int]] = None,
+               titles_only: bool = False, open_issues: bool = False,
+               scope: Optional[str] = None,
+               limit: int = 25, offset: int = 0) -> Dict[str, Any]:
+        """Performs a global search across Redmine.
+        
+        Args:
+            query: Search query string
+            project_id: Project scope (optional)
+            titles_only: Search only in titles
+            open_issues: Search only open issues
+            scope: Search scope ('subprojects' or 'all')
+            limit: Maximum results
+            offset: Pagination offset
+            
+        Returns:
+            Search results with total_count
+        """
+        params = {
+            "q": query,
+            "limit": limit,
+            "offset": offset
+        }
+        if titles_only:
+            params["titles_only"] = 1
+        if open_issues:
+            params["open_issues"] = 1
+        if scope:
+            params["scope"] = scope
+        
+        if project_id:
+            endpoint = f"projects/{project_id}/search"
+        else:
+            endpoint = "search"
+        
+        return self._request("GET", endpoint, params=params)
+
+    # Files API
+    def list_files(self, project_id: Union[str, int]) -> List[Dict[str, Any]]:
+        """Lists all files for a specific project.
+        
+        Args:
+            project_id: Project ID or identifier
+            
+        Returns:
+            List of files
+        """
+        response = self._request("GET", f"projects/{project_id}/files")
+        return response.get("files", [])
+
+    # My Account API
+    def get_my_account(self) -> Dict[str, Any]:
+        """Gets the current user's account information.
+        
+        Returns:
+            Account details
+        """
+        response = self._request("GET", "my/account")
+        return response.get("user", {})
+    
+    def update_my_account(self, account_data: Dict[str, Any]) -> bool:
+        """Updates the current user's account settings.
+        
+        Args:
+            account_data: Data to update (firstname, lastname, mail, custom_fields)
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            self._request("PUT", "my/account", data={"user": account_data})
+            return True
+        except RedmineAPIError:
+            return False
+
     # Utility methods
     def test_connection(self) -> bool:
-        """API bağlantısını test eder."""
+        """Tests the API connection."""
         try:
             self._request("GET", "projects", params={"limit": 1})
             return True

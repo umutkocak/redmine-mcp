@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "redmine-mcp"
-version = "1.0.3"
+version = "2.0.0"
 description = "Model Context Protocol server for Redmine API integration"
 authors = [
     {name = "Redmine MCP Project"}
 ]
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = {text = "MIT"}
 keywords = ["redmine", "mcp", "model-context-protocol", "api"]
 classifiers = [
@@ -18,16 +18,16 @@ classifiers = [
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
-    "mcp>=1.0.0",
-    "requests>=2.31.0",
-    "pydantic>=2.0.0",
-    "python-dotenv>=1.0.0",
+    "mcp>=1.6.0",
+    "requests>=2.32.0",
+    "pydantic>=2.10.0",
+    "python-dotenv>=1.0.1",
 ]
 
 

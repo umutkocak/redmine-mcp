@@ -1,172 +1,94 @@
 # Changelog
 
-All notable changes to the Redmine MCP Server project will be documented in this file.
+All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.4] - 2026-02-11
+## [2.0.0] - 2026-02-11
 
-### 🎉 Major Feature Expansion
+### Overview
 
-This release significantly expands the Redmine MCP Server capabilities from 11 to 29 operations (+164% increase).
+Major release achieving comprehensive Redmine REST API coverage. Total tools expanded from **11** to **74** across **20 modules**.
 
-### ✨ Added - Projects Module
+### Added
 
-- **create_project** - Create new Redmine projects with full configuration
-  - Support for name, identifier, description, homepage
-  - Parent project support (sub-projects)
-  - Module activation (issue_tracking, wiki, time_tracking, etc.)
-  - Tracker configuration
-  - Full UTF-8 support for international characters
-- **update_project** - Update existing project properties
-  - Modify name, description, homepage
-  - Change visibility (public/private)
-  - Update enabled modules and trackers
-- **delete_project** - Delete projects permanently
-- **archive_project** - Archive projects (Redmine 5.0+)
-  - Keeps project data but makes it inactive
-- **unarchive_project** - Restore archived projects (Redmine 5.0+)
+#### Phase 1 & 2 — Core Module Expansion
 
-### ✨ Added - Issues Module
+- **Projects**: `create_project`, `update_project`, `delete_project`, `archive_project`, `unarchive_project`
+- **Issues**: `delete_issue`, `add_watcher`, `remove_watcher`
+- **Users**: `get_current_user`, `create_user`, `update_user`, `delete_user`
+- **Time Entries**: `get_time_entry`, `update_time_entry`, `delete_time_entry`
+- **Attachments** _(new module)_: `upload_file`, `get_attachment`, `download_attachment`
+- **Versions** _(new module)_: `list_versions`, `get_version`, `create_version`, `update_version`, `delete_version`
+- **Memberships** _(new module)_: `list_memberships`, `get_membership`, `create_membership`, `update_membership`, `delete_membership`
+- **Enumerations**: `list_issue_priorities`, `list_time_entry_activities`, `list_document_categories`
+- **Issue Categories** _(new module)_: `list_issue_categories`, `get_issue_category`, `create_issue_category`, `update_issue_category`, `delete_issue_category`
+- **Issue Relations** _(new module)_: `list_issue_relations`, `get_issue_relation`, `create_issue_relation`, `delete_issue_relation`
 
-- **delete_issue** - Delete issues permanently
-  - Proper error handling for permissions
-- **add_watcher** - Add users as watchers to issues
-  - Email notifications for watchers
-  - Full UTF-8 support for international characters
-- **remove_watcher** - Remove watchers from issues
-  - Clean watcher list management
+#### Phase 3 — Administration & Collaboration
 
-### ✨ Added - Users Module
+- **Wiki Pages** _(new module)_: `list_wiki_pages`, `get_wiki_page`, `create_or_update_wiki_page`, `delete_wiki_page`
+- **Groups** _(new module)_: `list_groups`, `get_group`, `create_group`, `update_group`, `delete_group`, `add_user_to_group`, `remove_user_from_group`
+- **Roles** _(new module)_: `list_roles_detail`, `get_role`
+- **Custom Fields** _(new module)_: `list_custom_fields`
+- **Journals** _(new module)_: `list_issue_journals`, `update_journal`
 
-- **get_current_user** - Get authenticated user information
-  - Uses `/users/current` endpoint
-  - Returns API key owner's details
-  - Includes memberships and groups if requested
-- **create_user** - Create new users (Admin only)
-  - Required: login, firstname, lastname, mail
-  - Optional: password, admin flag, must_change_passwd
-  - Full UTF-8 support for international names
-  - Auto-password generation option
-- **update_user** - Update user details (Admin only)
-  - Change names, email, password
-  - Modify admin permissions
-  - Full UTF-8 support
-- **delete_user** - Delete users (Admin only)
-  - Proper permission checks
-  - Cascade handling
+#### Phase 4 — Information & Search
 
-### ✨ Added - Time Entries Module
+- **News** _(new module)_: `list_news`, `get_news`
+- **Queries** _(new module)_: `list_queries`
+- **Search** _(new module)_: `search`
+- **Files** _(new module)_: `list_files`
+- **My Account** _(new module)_: `get_my_account`, `update_my_account`
 
-- **get_time_entry** - Get specific time entry details
-  - Retrieve hours, activity, comments
-  - Custom fields support
-- **update_time_entry** - Update time entry properties
-  - Change hours, date, activity
-  - Update comments and custom fields
-- **delete_time_entry** - Delete time entries
-  - Proper validation and error handling
+### Changed
 
-### ✨ Added - Attachments Module (NEW) 🔥
+- Rewrote `README.md` — professional English, GitHub-optimized with badges and tables
+- Extended `RedmineClient` with 40+ API methods covering all Redmine REST endpoints
+- Unified error handling and response formatting across all tool modules
+- Updated dependencies to latest compatible versions
 
-**CRITICAL FEATURE**: Full file upload/download support with UTF-8 filename handling
+### Fixed
 
-- **upload_file** - Upload files to Redmine
-  - Two-step process: upload → get token → use in issue/wiki
-  - Binary file support (PDF, images, Excel, etc.)
-  - UTF-8 filename support with international characters
-  - Base64 encoding support for MCP transport
-  - Returns token for attachment to issues/wiki pages
-- **get_attachment** - Get attachment metadata
-  - Filename, size, content_type, author
-  - Creation date and description
-- **download_attachment** - Download attachment content
-  - Binary file download
-  - Base64 encoding for MCP response
-  - Full UTF-8 filename preservation
+- Import organization in `main.py`
+- Consistent error messages and HTTP status code propagation
+- Validation messages for required fields in all CRUD operations
 
-### 🔧 Technical Improvements
+### Migration Notes
 
-#### RedmineClient Enhancements
-
-- Added `upload_file()` method with special binary handling
-  - Custom headers: `Content-Type: application/octet-stream`
-  - UTF-8 filename URL encoding with `urllib.parse.quote()`
-  - Extended timeout (60s) for large file uploads
-  - Proper token extraction from response
-- Added attachment download with `download_attachment()`
-  - Binary content handling
-  - Stream-based download for large files
-- Enhanced error handling for all new endpoints
-  - Detailed error messages
-  - HTTP status code preservation
-  - Validation error extraction
-
-#### UTF-8/International Character Support
-
-- ✅ All text fields support international characters (UTF-8)
-- ✅ Filenames with special characters work correctly
-- ✅ JSON encode/decode with `ensure_ascii=False`
-- ✅ URL encoding for special characters in filenames
-- ✅ Binary file handling separate from text encoding
-
-### 📊 Statistics
-
-- **Total Operations**: 29 (was 11 in v1.0.3)
-- **New Operations**: 18
-- **Modules**: 6 (5 expanded + 1 new)
-- **Code Coverage**: Projects (100%), Issues (100%), Users (100%), Time Entries (100%), Attachments (100%)
-- **Files Modified**: 7
-- **Files Created**: 1 (attachments.py)
-- **Lines Added**: ~1,200+
-
-### 🐛 Bug Fixes
-
-- Fixed import organization in main.py
-- Improved error handling in all CRUD operations
-- Better validation messages for required fields
-
-### 📝 Documentation
-
-- Updated README.md with all new operations
-- Added feature descriptions and examples
-- Updated operation counts (11 → 31)
-- Version bump to 2.0.0
-
-### 🔄 Migration Notes
-
-**Breaking Changes**: None! This is a backwards-compatible expansion.
-
-All existing v1.0.3 operations continue to work exactly as before. New operations are additive only.
-
-### 🎯 Roadmap
-
-Planned for future releases:
-
-- Issue Relations, Versions, Project Memberships
-- Wiki Pages, Groups, Roles
-- Custom Fields, Journals, Search
-- News, Queries, Files
+No breaking changes. All v1.0.x tools remain fully compatible. New tools are purely additive.
 
 ---
 
-## [1.0.3] - 2024-XX-XX
+## [1.0.4] - 2026-02-01
 
-### Features (11 operations)
+### Added
 
-- Projects: list, get
-- Issues: list, get, create, update
-- Users: list, get
-- Time Entries: list, create
-- Enumerations: list
+- Projects: `create_project`, `update_project`, `delete_project`, `archive_project`, `unarchive_project`
+- Issues: `delete_issue`, `add_watcher`, `remove_watcher`
+- Users: `get_current_user`, `create_user`, `update_user`, `delete_user`
+- Time Entries: `get_time_entry`, `update_time_entry`, `delete_time_entry`
+- Attachments module: `upload_file`, `get_attachment`, `download_attachment`
+- Full UTF-8/international character support across all operations
 
-### Status
+### Changed
 
-- UTF-8 support: ✅
-- Basic CRUD: Partial
-- File operations: ❌
+- Total operations expanded from 11 to 29
 
 ---
 
-**Full Changelog**: https://github.com/umutkocak/redmine-mcp/compare/v1.0.3...v1.0.4
+## [1.0.3] - 2024-12-01
+
+### Added
+
+- Initial release with 11 core operations
+- Projects: `list_projects`, `get_project`
+- Issues: `list_issues`, `get_issue`, `create_issue`, `update_issue`
+- Users: `list_users`, `get_user`
+- Time Entries: `list_time_entries`, `create_time_entry`
+- Enumerations: `list_enumerations`
+
+---
+
+**Full Changelog**: https://github.com/umutkocak/redmine-mcp/compare/v1.0.3...v2.0.0
