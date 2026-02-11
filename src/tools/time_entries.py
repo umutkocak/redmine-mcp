@@ -119,6 +119,74 @@ def create_create_time_entry_tool() -> Tool:
         },
     )
 
+def create_get_time_entry_tool() -> Tool:
+    """get_time_entry tool'unu oluşturur."""
+    return Tool(
+        name="get_time_entry",
+        description="Belirli bir zaman kaydının detaylarını getirir",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "time_entry_id": {
+                    "type": "number",
+                    "description": "Zaman kaydı ID'si"
+                }
+            },
+            "required": ["time_entry_id"],
+        },
+    )
+
+def create_update_time_entry_tool() -> Tool:
+    """update_time_entry tool'unu oluşturur."""
+    return Tool(
+        name="update_time_entry",
+        description="Mevcut zaman kaydını günceller",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "time_entry_id": {
+                    "type": "number",
+                    "description": "Zaman kaydı ID'si"
+                },
+                "spent_on": {
+                    "type": "string",
+                    "description": "Yeni tarih (YYYY-MM-DD)"
+                },
+                "hours": {
+                    "type": "number",
+                    "description": "Yeni saat değeri",
+                    "minimum": 0.01
+                },
+                "activity_id": {
+                    "type": "number",
+                    "description": "Yeni aktivite ID'si"
+                },
+                "comments": {
+                    "type": "string",
+                    "description": "Yeni açıklama"
+                }
+            },
+            "required": ["time_entry_id"],
+        },
+    )
+
+def create_delete_time_entry_tool() -> Tool:
+    """delete_time_entry tool'unu oluşturur."""
+    return Tool(
+        name="delete_time_entry",
+        description="Zaman kaydını siler",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "time_entry_id": {
+                    "type": "number",
+                    "description": "Silinecek zaman kaydı ID'si"
+                }
+            },
+            "required": ["time_entry_id"],
+        },
+    )
+
 async def handle_list_time_entries(client, args: Dict[str, Any]) -> List[TextContent]:
     """list_time_entries tool handler'ı."""
     try:
@@ -229,6 +297,78 @@ async def handle_create_time_entry(client, args: Dict[str, Any]) -> List[TextCon
         
     except Exception as e:
         logger.error(f"create_time_entry error: {e}")
+        return [TextContent(
+            type="text",
+            text=f"Error: {str(e)}"
+        )]
+
+async def handle_get_time_entry(client, args: Dict[str, Any]) -> List[TextContent]:
+    """get_time_entry tool handler'ı."""
+    try:
+        time_entry_id = args.get("time_entry_id")
+        if not time_entry_id:
+            raise ValueError("time_entry_id is required")
+        
+        result = client.get_time_entry(time_entry_id)
+        
+        import json
+        return [TextContent(
+            type="text",
+            text=json.dumps(result, indent=2, ensure_ascii=False)
+        )]
+        
+    except Exception as e:
+        logger.error(f"get_time_entry error: {e}")
+        return [TextContent(
+            type="text",
+            text=f"Error: {str(e)}"
+        )]
+
+async def handle_update_time_entry(client, args: Dict[str, Any]) -> List[TextContent]:
+    """update_time_entry tool handler'ı."""
+    try:
+        time_entry_id = args.get("time_entry_id")
+        if not time_entry_id:
+            raise ValueError("time_entry_id is required")
+        
+        # Prepare update data (remove time_entry_id from data)
+        time_entry_data = {k: v for k, v in args.items() if k != "time_entry_id"}
+        
+        if not time_entry_data:
+            raise ValueError("No update data provided")
+        
+        result = client.update_time_entry(time_entry_id, time_entry_data)
+        
+        import json
+        return [TextContent(
+            type="text",
+            text=json.dumps(result or {"status": "updated"}, indent=2, ensure_ascii=False)
+        )]
+        
+    except Exception as e:
+        logger.error(f"update_time_entry error: {e}")
+        return [TextContent(
+            type="text",
+            text=f"Error: {str(e)}"
+        )]
+
+async def handle_delete_time_entry(client, args: Dict[str, Any]) -> List[TextContent]:
+    """delete_time_entry tool handler'ı."""
+    try:
+        time_entry_id = args.get("time_entry_id")
+        if not time_entry_id:
+            raise ValueError("time_entry_id is required")
+        
+        result = client.delete_time_entry(time_entry_id)
+        
+        import json
+        return [TextContent(
+            type="text",
+            text=json.dumps({"status": "deleted", "time_entry_id": time_entry_id}, indent=2, ensure_ascii=False)
+        )]
+        
+    except Exception as e:
+        logger.error(f"delete_time_entry error: {e}")
         return [TextContent(
             type="text",
             text=f"Error: {str(e)}"

@@ -151,6 +151,65 @@ def create_create_issue_tool() -> Tool:
         },
     )
 
+def create_delete_issue_tool() -> Tool:
+    """delete_issue tool'unu oluşturur."""
+    return Tool(
+        name="delete_issue",
+        description="Redmine issue'sını siler",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "issue_id": {
+                    "type": "number",
+                    "description": "Silinecek issue ID'si"
+                }
+            },
+            "required": ["issue_id"],
+        },
+    )
+
+def create_add_watcher_tool() -> Tool:
+    """add_watcher tool'unu oluşturur."""
+    return Tool(
+        name="add_watcher",
+        description="Issue'ya takipçi (watcher) ekler",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "issue_id": {
+                    "type": "number",
+                    "description": "Issue ID'si"
+                },
+                "user_id": {
+                    "type": "number",
+                    "description": "Takipçi olarak eklenecek kullanıcı ID'si"
+                }
+            },
+            "required": ["issue_id", "user_id"],
+        },
+    )
+
+def create_remove_watcher_tool() -> Tool:
+    """remove_watcher tool'unu oluşturur."""
+    return Tool(
+        name="remove_watcher",
+        description="Issue'dan takipçi (watcher) çıkarır",
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "issue_id": {
+                    "type": "number",
+                    "description": "Issue ID'si"
+                },
+                "user_id": {
+                    "type": "number",
+                    "description": "Çıkarılacak kullanıcı ID'si"
+                }
+            },
+            "required": ["issue_id", "user_id"],
+        },
+    )
+
 def create_update_issue_tool() -> Tool:
     """update_issue tool'unu oluşturur."""
     return Tool(
@@ -374,6 +433,80 @@ async def handle_update_issue(client, args: Dict[str, Any]) -> List[TextContent]
         
     except Exception as e:
         logger.error(f"update_issue error: {e}")
+        return [TextContent(
+            type="text",
+            text=f"Error: {str(e)}"
+        )]
+
+async def handle_delete_issue(client, args: Dict[str, Any]) -> List[TextContent]:
+    """delete_issue tool handler'ı."""
+    try:
+        issue_id = args.get("issue_id")
+        if not issue_id:
+            raise ValueError("issue_id is required")
+        
+        result = client.delete_issue(issue_id)
+        
+        import json
+        return [TextContent(
+            type="text",
+            text=json.dumps({"status": "deleted", "issue_id": issue_id}, indent=2, ensure_ascii=False)
+        )]
+        
+    except Exception as e:
+        logger.error(f"delete_issue error: {e}")
+        return [TextContent(
+            type="text",
+            text=f"Error: {str(e)}"
+        )]
+
+async def handle_add_watcher(client, args: Dict[str, Any]) -> List[TextContent]:
+    """add_watcher tool handler'ı."""
+    try:
+        issue_id = args.get("issue_id")
+        user_id = args.get("user_id")
+        
+        if not issue_id:
+            raise ValueError("issue_id is required")
+        if not user_id:
+            raise ValueError("user_id is required")
+        
+        result = client.add_watcher(issue_id, user_id)
+        
+        import json
+        return [TextContent(
+            type="text",
+            text=json.dumps({"status": "watcher_added", "issue_id": issue_id, "user_id": user_id}, indent=2, ensure_ascii=False)
+        )]
+        
+    except Exception as e:
+        logger.error(f"add_watcher error: {e}")
+        return [TextContent(
+            type="text",
+            text=f"Error: {str(e)}"
+        )]
+
+async def handle_remove_watcher(client, args: Dict[str, Any]) -> List[TextContent]:
+    """remove_watcher tool handler'ı."""
+    try:
+        issue_id = args.get("issue_id")
+        user_id = args.get("user_id")
+        
+        if not issue_id:
+            raise ValueError("issue_id is required")
+        if not user_id:
+            raise ValueError("user_id is required")
+        
+        result = client.remove_watcher(issue_id, user_id)
+        
+        import json
+        return [TextContent(
+            type="text",
+            text=json.dumps({"status": "watcher_removed", "issue_id": issue_id, "user_id": user_id}, indent=2, ensure_ascii=False)
+        )]
+        
+    except Exception as e:
+        logger.error(f"remove_watcher error: {e}")
         return [TextContent(
             type="text",
             text=f"Error: {str(e)}"
